@@ -28,11 +28,27 @@
       padding: 20px;
     }
 
-    #issues {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
+#issues {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 700px;
+}
+
+.issue-link {
+  display: block;
+  padding: 16px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  color: #2458bd;
+  text-decoration: none;
+}
+
+.issue-link:hover {
+  background: #f0f4ff;
+  text-decoration: underline;
+}
 
     #issues button {
       padding: 12px;
@@ -83,26 +99,11 @@
     <p>Liste over udgivelser</p>
   </header>
 
-  <main>
-    <section>
-      <h2>Udgivelser</h2>
-      <div id="status">Henter...</div>
-      <div id="issues"></div>
-    </section>
-
-    <section>
-      <h2 id="selectedTitle">Vælg nummer</h2>
-      <iframe
-        id="viewer"
-        title="Tuneposten PDF viewer">
-      </iframe>
-      <p>
-        <a id="download" hidden download>
-          Download denne udgave
-        </a>
-      </p>
-    </section>
-  </main>
+<main>
+  <h2>TUNEPOSTEN</h2>
+  <div id="status">Henter...</div>
+  <div id="issues"></div>
+</main>
 
   <script>
     const OWNER = "tuneposten";
@@ -153,62 +154,52 @@ function openIssue(file, button) {
 }
 
 
-    async function loadIssues() {
-      try {
-        const response = await fetch(API);
 
-        if (!response.ok) {
-          throw new Error(
-            "GitHub returned HTTP " + response.status
-          );
-        }
+async function loadIssues() {
+  try {
+    const response = await fetch(API);
 
-        const files = await response.json();
-
-        const pdfs = files
-          .filter(file =>
-            file.type === "file" &&
-            /\.pdf$/i.test(file.name)
-          )
-          .sort((a, b) =>
-            b.name.localeCompare(a.name)
-          );
-
-        issues.replaceChildren();
-
-        if (pdfs.length === 0) {
-          status.textContent = "Ingen PDF udgaver fundet.";
-          return;
-        }
-
-        status.textContent =
-          pdfs.length + " udgaver er tilgængelige";
-
-        pdfs.forEach((file, index) => {
-          const button = document.createElement("button");
-
-          button.textContent =
-            file.name.replace(/\.pdf$/i, "");
-
-          button.addEventListener("click", () => {
-            openIssue(file, button);
-          });
-
-          issues.appendChild(button);
-
-          // Automatically open the newest issue
-          if (index === 0) {
-            openIssue(file, button);
-          }
-        });
-
-      } catch (error) {
-        status.textContent =
-          "Kunne ikke hente filen.";
-
-        console.error(error);
-      }
+    if (!response.ok) {
+      throw new Error("GitHub API returned " + response.status);
     }
+
+    const files = await response.json();
+
+    const pdfs = files
+      .filter(file =>
+        file.type === "file" &&
+        /\.pdf$/i.test(file.name)
+      )
+      .sort((a, b) => b.name.localeCompare(a.name));
+
+    issues.replaceChildren();
+
+    if (pdfs.length === 0) {
+      status.textContent = "No magazine issues found.";
+      return;
+    }
+
+    status.textContent = pdfs.length + " er tilgængelig(e)";
+
+    pdfs.forEach(file => {
+      const link = document.createElement("a");
+
+      link.href = "/" + file.path
+        .split("/")
+        .map(encodeURIComponent)
+        .join("/");
+
+      link.textContent = file.name.replace(/\.pdf$/i, "");
+      link.className = "issue-link";
+
+      issues.appendChild(link);
+    });
+
+  } catch (error) {
+    status.textContent = "Kunne ikke hente.";
+    console.error(error);
+  }
+}
 
     loadIssues();
   </script>
