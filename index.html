@@ -133,21 +133,21 @@
       return SITE_BASE + safePath;
     }
 
-    function openIssue(file, button) {
-      const url = pdfUrl(file.path);
+function openIssue(file, button) {
+  // Use the actual PDF file URL returned by GitHub's API
+  const url = file.download_url;
 
-      viewer.src = url;
-      title.textContent =
-        file.name.replace(/\.pdf$/i, "");
+  viewer.src = url;
+  title.textContent = file.name.replace(/\.pdf$/i, "");
 
-      download.href = url;
-      download.hidden = false;
+  download.href = url;
+  download.hidden = false;
 
-      document.querySelectorAll("#issues button")
-        .forEach(b => b.classList.remove("active"));
+  document.querySelectorAll("#issues button")
+    .forEach(b => b.classList.remove("active"));
 
-      button.classList.add("active");
-    }
+  button.classList.add("active");
+}
 
     async function loadIssues() {
       try {
