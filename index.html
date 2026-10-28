@@ -133,9 +133,12 @@
       return SITE_BASE + safePath;
     }
 
+
 function openIssue(file, button) {
-  // Use the actual PDF file URL returned by GitHub's API
-  const url = file.download_url;
+  const url = "/" + REPO + "/" +
+    file.path.split("/")
+      .map(encodeURIComponent)
+      .join("/");
 
   viewer.src = url;
   title.textContent = file.name.replace(/\.pdf$/i, "");
@@ -148,6 +151,7 @@ function openIssue(file, button) {
 
   button.classList.add("active");
 }
+
 
     async function loadIssues() {
       try {
