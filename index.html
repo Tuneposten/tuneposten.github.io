@@ -1,0 +1,212 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="description" content="Tuneposten">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tuneposten i digital udgave</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      color: #222;
+      background: #f5f5f5;
+    }
+
+    header {
+      padding: 20px;
+      background: #222;
+      color: white;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 20px;
+      padding: 20px;
+    }
+
+    #issues {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    #issues button {
+      padding: 12px;
+      text-align: left;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: white;
+      cursor: pointer;
+    }
+
+    #issues button:hover,
+    #issues button:focus {
+      background: #e8efff;
+    }
+
+    #issues button.active {
+      border-color: #2458bd;
+      background: #e8efff;
+    }
+
+    #viewer {
+      width: 100%;
+      height: 80vh;
+      min-height: 400px;
+      border: 0;
+      background: white;
+    }
+
+    #status {
+      padding: 12px;
+    }
+
+    @media (max-width: 700px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      #viewer {
+        height: 70vh;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>TUNEPOSTEN</h1>
+    <p>Liste over udgivelser</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>Udgivelser</h2>
+      <div id="status">Henter...</div>
+      <div id="issues"></div>
+    </section>
+
+    <section>
+      <h2 id="selectedTitle">Vælg nummer</h2>
+      <iframe
+        id="viewer"
+        title="Tuneposten PDF viewer">
+      </iframe>
+      <p>
+        <a id="download" hidden download>
+          Download denne udgave
+        </a>
+      </p>
+    </section>
+  </main>
+
+  <script>
+    const OWNER = "tuneposten";
+    const REPO = "tuneposten.github.io";
+    const BRANCH = "main";
+    const FOLDER = "magazines";
+
+    // Project site: "/my-magazine-site/"
+    // User site or custom domain at root: "/"
+    const SITE_BASE = "/" + REPO + "/";
+
+    const API =
+      `https://api.github.com/repos/${OWNER}/${REPO}` +
+      `/contents/${FOLDER}?ref=${BRANCH}`;
+
+    const issues = document.getElementById("issues");
+    const status = document.getElementById("status");
+    const viewer = document.getElementById("viewer");
+    const title = document.getElementById("selectedTitle");
+    const download = document.getElementById("download");
+
+    function pdfUrl(path) {
+      const safePath = path
+        .split("/")
+        .map(encodeURIComponent)
+        .join("/");
+
+      return SITE_BASE + safePath;
+    }
+
+    function openIssue(file, button) {
+      const url = pdfUrl(file.path);
+
+      viewer.src = url;
+      title.textContent =
+        file.name.replace(/\.pdf$/i, "");
+
+      download.href = url;
+      download.hidden = false;
+
+      document.querySelectorAll("#issues button")
+        .forEach(b => b.classList.remove("active"));
+
+      button.classList.add("active");
+    }
+
+    async function loadIssues() {
+      try {
+        const response = await fetch(API);
+
+        if (!response.ok) {
+          throw new Error(
+            "GitHub returned HTTP " + response.status
+          );
+        }
+
+        const files = await response.json();
+
+        const pdfs = files
+          .filter(file =>
+            file.type === "file" &&
+            /\.pdf$/i.test(file.name)
+          )
+          .sort((a, b) =>
+            b.name.localeCompare(a.name)
+          );
+
+        issues.replaceChildren();
+
+        if (pdfs.length === 0) {
+          status.textContent = "Ingen PDF udgaver fundet.";
+          return;
+        }
+
+        status.textContent =
+          pdfs.length + " udgaver er tilgængelige";
+
+        pdfs.forEach((file, index) => {
+          const button = document.createElement("button");
+
+          button.textContent =
+            file.name.replace(/\.pdf$/i, "");
+
+          button.addEventListener("click", () => {
+            openIssue(file, button);
+          });
+
+          issues.appendChild(button);
+
+          // Automatically open the newest issue
+          if (index === 0) {
+            openIssue(file, button);
+          }
+        });
+
+      } catch (error) {
+        status.textContent =
+          "Kunne ikke hente filen.";
+
+        console.error(error);
+      }
+    }
+
+    loadIssues();
+  </script>
+</body>
+</html>
