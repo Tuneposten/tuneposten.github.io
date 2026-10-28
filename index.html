@@ -135,10 +135,10 @@
 
 
 function openIssue(file, button) {
-  const url = "/" + REPO + "/" +
-    file.path.split("/")
-      .map(encodeURIComponent)
-      .join("/");
+  const url = "/" + file.path
+  .split("/")
+  .map(encodeURIComponent)
+  .join("/");
 
   viewer.src = url;
   title.textContent = file.name.replace(/\.pdf$/i, "");
